@@ -1,0 +1,52 @@
+#                    _ooOoo_
+#                   o8888888o
+#                   88" . "88
+#                   (| -_- |)
+#                   O\  =  /O
+#                ____/`---'\____
+#              .'  \\|     |//  `.
+#             /  \\|||  :  |||//  \
+#            /  _||||| -:- |||||-  \
+#            |   | \\\  -  /// |   |
+#            | \_|  ''\---/''  |   |
+#            \  .-\__  `-`  ___/-. /
+#          ___`. .'  /--.--\  `. . __
+#       ."" '<  `.___\_<|>_/___.'  >'"".
+#      | | :  `- \`.;`\ _ /`;.`/ - ` : | |
+#      \  \ `-.   \_ __\ /__ _/   .-` /  /
+# ======`-.____`-.___\_____/___.-`____.-'======
+#                    `=---='
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#             佛祖保佑       永无BUG
+
+from selenium import webdriver
+from CookiesPool import CookiesPool
+import time
+
+
+pool = CookiesPool(False)
+cookies = pool.get_proxy()  # 从cookie池中随机获取有效的cookie
+
+url = 'https://weibo.com/u/6600341010/home?wvr=5&lf=reg'
+driver = webdriver.Chrome()
+driver.maximize_window()
+driver.delete_all_cookies()
+driver.get(url)
+
+for item in cookies.items():
+    driver.add_cookie({
+        'domain': 'weibo.com', # 表示的是cookie所在的域
+        'name':item[0].strip(),
+        'value':item[1],
+        'expires':'', # 过期时间
+        'path':'/', # 表示cookie所在的目录
+        'httpOnly':False,#若此属性为True，则只有在http请求头中会有此cookie信息，而不能通过document.cookie来访问此cookie
+        'HostOnly':False,#获取Cookie时，首先要检查Domain匹配性，其次才检查path、secure、httponly等属性的匹配性。如果host-only-flag为true时，只有当前域名与该Cookie的Domain属性完全相等才可以进入后续流程；host-only-flag为false时，符合域规则（domain-matches）的域名都可以进入后续流程。
+        'Secure':False#设置是否只能通过https来传递此条cookie
+    })
+
+driver.get(url)
+print(driver.current_url)
+
+
+
