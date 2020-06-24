@@ -21,9 +21,9 @@ browser.get(
 name = browser.find_element_by_id('fm-login-id')
 passw = browser.find_element_by_id('fm-login-password')
 
-name.send_keys('路路的husband')
+name.send_keys('66666666')
 time.sleep(1)
-passw.send_keys('LLL.4251020')
+passw.send_keys('66666666666666')
 
 btn = WebDriverWait(browser, 30, 0.5).until(
     EC.visibility_of_element_located((By.ID, 'nc_1_n1z'))
