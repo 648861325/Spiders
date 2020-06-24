@@ -1,0 +1,113 @@
+# 案例：京东大药房爬虫
+# https://mall.jd.com/index-1000015441.html?cu=true&utm_source=baidu-search&utm_medium=cpc&utm_campaign=t_262767352_baidusearch&utm_term=113098950926_0_f4806f9c0e2e48bab760aa196dddf56c
+import re
+
+from selenium import webdriver
+from selenium.webdriver import ActionChains
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+import time
+import random
+import csv
+import codecs
+from selenium.webdriver import ChromeOptions
+
+
+def get_headers():
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.117 Safari/537.36',
+    }
+    return headers
+
+
+# 爬取标题，价格，品牌，商品名称，类别，适用症状，适用类型
+# 保存到csv文件
+def save_data(dre):
+    options = ChromeOptions()
+    prefs = {"profile.managed_default_content_settings.images": 2}
+    options.add_experimental_option("prefs", prefs)
+    # 设置无头浏览器
+    options.add_argument('--headless')
+    browser = webdriver.Chrome(chrome_options=options)
+    browser.get(dre)
+    wait = WebDriverWait(browser, 10)
+    wait.until(
+        EC.presence_of_all_elements_located((By.XPATH, '//*'))
+    )
+    m_title = browser.find_element_by_xpath('/html/body/div[6]/div/div[2]/div[1]').text.strip()
+    m_price = browser.find_element_by_xpath(
+        '//span[@class="p-price"]').text.strip()
+    m_desc = browser.find_elements_by_xpath('//ul[@class="parameter2 p-parameter-list"]/li')
+    for item in m_desc:
+        key = item.text.split('：')[0]
+        value = item.text.split('：')[1]
+        if key == "商品名称":
+            m_name = value.strip()
+        elif key == "类别":
+            m_type = value
+        elif key == "适用症状":
+            m_useconditon = value
+        elif key == "适用类型":
+            m_usetype = value
+
+    m_brand = browser.find_element_by_xpath('//*[@id="parameter-brand"]/li/a').text.strip()
+    print(m_title)
+    print(m_price)
+    print(m_brand)
+    print(m_name)
+    print(m_type)
+    try:
+        print(m_useconditon)
+    except Exception as e:
+        m_useconditon = m_usetype
+    print(m_usetype)
+    # print(m_desc)
+    print('*' * 50)
+    browser.close()
+    with codecs.open("./data/data.csv", mode='a', encoding="utf-8") as f:
+        wr = csv.writer(f)
+        wr.writerow([m_title, m_price, m_brand, m_name, m_type, m_useconditon, m_usetype])
+
+
+def get_data(link):
+    browser = webdriver.Chrome()
+    browser.get(link)
+    wait = WebDriverWait(browser, 10)
+    items = browser.find_elements_by_xpath('//*[@id="Map_m"]/area')
+    print(len(items))
+    links = [item.get_attribute("href") for item in items]
+    # print(links)
+    for m_link in links:
+        browser.get(m_link)
+        while True:
+            for i in range(2):
+                browser.execute_script('window.scrollTo(0,document.body.scrollHeight);')
+                time.sleep(2)
+            time.sleep(2)
+            ls = wait.until(
+                EC.presence_of_all_elements_located((By.XPATH, '//li[@class="gl-item"]'))
+            )
+            print(len(ls))
+            for good in ls:
+                # print(good.get_attribute('innerHTML'))
+                print(good.find_element_by_xpath('.//div[@class="p-img"]/a').get_attribute('href'))
+                dre = good.find_element_by_xpath('.//div[@class="p-img"]/a').get_attribute('href')
+                save_data(dre)
+            browser.execute_script('window.scrollTo(0,document.body.scrollHeight-300);')
+            time.sleep(2)
+            try:
+                nxt = wait.until(
+                    EC.presence_of_element_located((By.XPATH, '//a[@class="pn-next"]'))
+                )
+                action = ActionChains(browser)
+                action.move_to_element(nxt).click().perform()
+                print('next page...')
+                time.sleep(3)
+            except Exception as e:
+                break
+
+
+if __name__ == '__main__':
+    url = "https://mall.jd.com/index-1000015441.html?cu=true&utm_source=baidu-search&utm_medium=cpc&utm_campaign=t_262767352_baidusearch&utm_term=113098950926_0_f4806f9c0e2e48bab760aa196dddf56c"
+    get_data(url)
