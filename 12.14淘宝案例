@@ -1,0 +1,108 @@
+#                    _ooOoo_
+#                   o8888888o
+#                   88" . "88
+#                   (| -_- |)
+#                   O\  =  /O
+#                ____/`---'\____
+#              .'  \\|     |//  `.
+#             /  \\|||  :  |||//  \
+#            /  _||||| -:- |||||-  \
+#            |   | \\\  -  /// |   |
+#            | \_|  ''\---/''  |   |
+#            \  .-\__  `-`  ___/-. /
+#          ___`. .'  /--.--\  `. . __
+#       ."" '<  `.___\_<|>_/___.'  >'"".
+#      | | :  `- \`.;`\ _ /`;.`/ - ` : | |
+#      \  \ `-.   \_ __\ /__ _/   .-` /  /
+# ======`-.____`-.___\_____/___.-`____.-'======
+#                    `=---='
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#             佛祖保佑       永无BUG
+
+from selenium import webdriver
+from selenium.webdriver.common.by import By # 查询的方式
+from selenium.webdriver.support.ui import WebDriverWait # 智能等待的对象
+from selenium.webdriver.support import expected_conditions as EC  # 等待条件
+from selenium.webdriver.common.action_chains import ActionChains  #动作链
+import time
+import random
+import re
+
+
+browser = webdriver.Chrome()
+browser.maximize_window()
+# 等待变量
+wait = WebDriverWait(browser,60)
+try:
+    browser.get('https://www.taobao.com/')
+    # id是q的输入框加载成功，停止等待
+    tb_input = wait.until(
+        EC.presence_of_element_located((By.CSS_SELECTOR,'#q'))
+    )
+    #搜索按钮加载成功，停止等待
+    search_btn = wait.until(
+        EC.presence_of_element_located((By.CSS_SELECTOR,'div.search-button > button'))
+    )
+    tb_input.send_keys('移动硬盘')
+    search_btn.click()
+
+    wait.until(
+        EC.presence_of_element_located((By.CSS_SELECTOR,'.m-itemlist'))
+    )
+
+    total = wait.until(
+        EC.presence_of_element_located((By.CSS_SELECTOR,'div.total'))
+    )
+    total = total.text.strip()
+    pat = re.compile(r'(\d+)')
+    match_obj = pat.search(total)
+    if match_obj !=None:
+        total = match_obj.group(1)
+    print('total:',total)
+
+    # 多页爬取
+    while True:
+        ls = wait.until(
+            EC.presence_of_all_elements_located((By.XPATH,'//div[@class="item J_MouserOnverReq  "]'))
+        )
+        browser.execute_script('window.scrollTo(0,document.body.scrollHeight);')
+        time.sleep(random.random()*2)
+        print('len:', len(ls))
+        for item in ls:
+            title = item.find_element_by_xpath('.//div[@class="row row-2 title"]/a')
+            detail_url = title.get_attribute('href')
+            title = title.text.strip()
+            print('title:',title)
+            print('detail_url:', detail_url)
+            price = item.find_elements_by_xpath('.//div[@class="price g_price g_price-highlight"]/strong')[0]
+            price = price.text.strip()
+            print('price:',price)
+            shopname = item.find_elements_by_xpath('.//a[@class="shopname J_MouseEneterLeave J_ShopInfo"]/span[2]')[0]
+            shopname = shopname.text.strip()
+            print('shopname:',shopname)
+            location = item.find_elements_by_xpath('.//div[@class="location"]')[0]
+            location =location.text.strip()
+            print('location:',location)
+            deal_cnt = item.find_elements_by_xpath('.//div[@class="deal-cnt"]')[0]
+            deal_cnt = deal_cnt.text.strip()
+            print('deal_cnt:',deal_cnt)
+            print('='*200)
+
+        browser.execute_script('window.scrollTo(0,document.body.scrollHeight-500);')
+        next_page_btn = wait.until(
+            EC.presence_of_element_located((By.XPATH,'//a[@class="J_Ajax num icon-tag"]'))
+        )
+        print('next page....')
+        actions = ActionChains(browser)
+        actions.move_to_element(next_page_btn).click().perform()
+        time.sleep(random.random()*5+1)
+
+
+except Exception as e:
+    print('fail...')
+
+browser.close()
+
+
+
+
