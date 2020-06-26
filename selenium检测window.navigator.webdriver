@@ -1,0 +1,19 @@
+原博主：￣□￣
+文章链接：https://www.cnblogs.com/presleyren/p/12936553.html
+移除Selenium中的 window.navigator.webdriver，复制就能用
+chrome测试版本： 83.0.4103.106（正式版本） 有效
+
+from selenium import webdriver
+
+options = webdriver.ChromeOptions()
+options.add_experimental_option("excludeSwitches", ["enable-automation"])
+options.add_experimental_option('useAutomationExtension', False)
+driver = webdriver.Chrome(options=options)
+driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
+  "source": """
+    Object.defineProperty(navigator, 'webdriver', {
+      get: () => undefined
+    })
+  """
+})
+driver.get('http://www.taobao.com')
