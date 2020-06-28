@@ -1,0 +1,125 @@
+#                    _ooOoo_
+#                   o8888888o
+#                   88" . "88
+#                   (| -_- |)
+#                   O\  =  /O
+#                ____/`---'\____
+#              .'  \\|     |//  `.
+#             /  \\|||  :  |||//  \
+#            /  _||||| -:- |||||-  \
+#            |   | \\\  -  /// |   |
+#            | \_|  ''\---/''  |   |
+#            \  .-\__  `-`  ___/-. /
+#          ___`. .'  /--.--\  `. . __
+#       ."" '<  `.___\_<|>_/___.'  >'"".
+#      | | :  `- \`.;`\ _ /`;.`/ - ` : | |
+#      \  \ `-.   \_ __\ /__ _/   .-` /  /
+# ======`-.____`-.___\_____/___.-`____.-'======
+#                    `=---='
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#             佛祖保佑       永无BUG
+
+
+'''
+搜索关键词,便利列表,爬取商品的相关信息
+'''
+
+
+
+from selenium import webdriver
+from selenium.webdriver.common.by import By #
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.action_chains import ActionChains
+import time
+import random
+import re
+
+# 创建浏览器对象
+browser = webdriver.Chrome()
+browser.maximize_window()
+# 创建智能等待的对象
+wait = WebDriverWait(browser,60)
+try:
+    browser.get('https://www.taobao.com/')
+    # 查找搜索输入框
+    tb_input = wait.until(
+        EC.presence_of_element_located((By.CSS_SELECTOR,'#q'))
+    )
+    # 查找搜索按钮
+    search_btn = wait.until(
+        EC.presence_of_element_located((By.CSS_SELECTOR,'div.search-button > button'))
+    )
+    time.sleep(2)
+    # 输入查找的商品名称
+    tb_input.send_keys('移动硬盘')
+    time.sleep(2)
+    search_btn.click()
+    # 等待商品列表的加载
+    ls=wait.until(
+        EC.presence_of_element_located((By.CSS_SELECTOR,'.m-itemlist'))
+    )
+    print('len:',ls)
+    # 获取页的总数
+    total = wait.until(
+        EC.presence_of_element_located((By.CSS_SELECTOR,'div.total'))
+    )
+
+    total = total.text
+    total = total.strip()
+    pat = re.compile(r'(\d+)')
+    match_obj = pat.search(total)
+    if match_obj != None:
+        total = match_obj.group(1)
+    print('total:',total)
+    #print(browser.page_source)
+    while True:
+       # 获取商品的列表 等待指定的所有元素加载完成
+        ls = wait.until(
+            EC.presence_of_all_elements_located((By.XPATH,'//div[contains(@class,"J_MouserOnverReq")]'))
+        )
+        browser.execute_script('window.scrollTo(0,document.body.scrollHeight);')
+        time.sleep(random.random()*2)
+        print('len:',len(ls))
+        #提取商品信息
+        for item in ls:
+            # 标题 链接
+            title =item.find_elements_by_xpath('.//a[@class="J_ClickStat"]')[0]
+            detail_url = title.get_attribute('href')
+            title = title.text.strip()
+            print('title:',title)
+            print('detail_url:',detail_url)
+            # 价格
+            price = item.find_elements_by_xpath('.//div[@class="price g_price g_price-highlight"]/strong')[0]
+            price = price.text.strip()
+            print('price:',price)
+            #店铺名称
+            shopname = item.find_elements_by_xpath('.//a[@class="shopname J_MouseEneterLeave J_ShopInfo"]/span[2]')[0]
+            shopname = shopname.text.strip()
+            # 位置
+            location = item.find_elements_by_xpath('.//div[@class="location"]')[0]
+            location = location.text.strip()
+            # 付款人数
+            deal_cnt = item.find_elements_by_xpath('.//div[@class="deal-cnt"]')[0]
+            deal_cnt = deal_cnt.text.strip()
+            print('deal_cnt:',deal_cnt)
+            # 图片链接
+            img_pic = item.find_elements_by_xpath('.//img[@class="J_ItemPic img"]')[0]
+            img_pic = img_pic.get_attribute('src')
+            print('img_pic:',img_pic)
+            print('='*200)
+        # 翻页处理
+        browser.execute_script('window.scrollTo(0,document.body.scrollHeight-500);')
+        next_page_btn = wait.until(
+            EC.presence_of_element_located((By.XPATH,'//a[@class="J_Ajax num icon-tag"]'))
+        )
+        print('next page...')
+        action = ActionChains(browser)
+        action.move_to_element(next_page_btn).click().perform()
+        time.sleep(random.random()*5)
+except Exception as e:
+    print(e)
+browser.close()
+
+
+
