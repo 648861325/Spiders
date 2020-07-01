@@ -1,0 +1,39 @@
+
+# 动态转发
+def down(url):
+    '''
+    使用讯代理下载指定的页面
+    :param url:
+    :return:
+    '''
+    orderno = "xxxxxxxxxxxx"  # 订单号
+    secret = "dxxxxxxxxxxxxxxxxxxxxxe"  # 秘钥
+    ip = "forward.xdaili.cn"
+    port = "80"
+    ip_port = ip + ":" + port
+    nums = 1
+    while nums <= 3:
+        # 生成签名参数sign
+        timestamp = str(int(time.time()))  # 10位的时间戳
+        string = "orderno=" + orderno + "," + "secret=" + secret + "," + "timestamp=" + timestamp
+        string = string.encode()
+        md5_string = hashlib.md5(string).hexdigest()
+        sign = md5_string.upper()
+        # auth验证信息
+        auth = "sign=" + sign + "&" + "orderno=" + orderno + "&" + "timestamp=" + timestamp
+        # 代理ip
+        proxy = {"http": "http://" + ip_port, "https": "https://" + ip_port}
+        # 请求头
+        headers = {"Proxy-Authorization": auth,
+                   "User-Agent": "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.75 Safari/537.36"
+                   }
+        try:
+            # 通过代理IP进行请求
+            response = requests.get(url, headers=headers, proxies=proxy, verify=False, allow_redirects=False)
+            if response.status_code == 200:
+                return response
+            else:
+                nums += 1
+        except Exception as e:
+            nums += 1
+    return None
